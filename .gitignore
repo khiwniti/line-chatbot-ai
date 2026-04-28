@@ -153,3 +153,5 @@ service-account-credentials.json
 
 .DS_Store
 Thumbs.db
+.vercel
+.env*.local

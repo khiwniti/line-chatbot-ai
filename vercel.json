@@ -1,0 +1,25 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/webhook.js",
+      "use": "@vercel/node",
+      "config": { "runtime": "nodejs20.x" }
+    },
+    {
+      "src": "api/billing.js",
+      "use": "@vercel/node",
+      "config": { "runtime": "nodejs20.x" }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/webhook",
+      "dest": "/api/webhook.js"
+    },
+    {
+      "src": "/billing",
+      "dest": "/api/billing.js"
+    }
+  ]
+}

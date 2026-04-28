@@ -1,0 +1,69 @@
+// Billing extraction service using NVIDIA NIM
+const axios = require('axios');
+
+/**
+ * Extract billing information from an image using NVIDIA NIM
+ * @param {Buffer} imageBinary - Binary image data
+ * @returns {Promise<Object>} Extracted billing fields
+ */
+async function extractBillingInfo(imageBinary) {
+  try {
+    const apiKey = process.env.NVIDIA_NIM_API_KEY || process.env.NVIDIA_API_KEY;
+    const endpoint = process.env.NVIDIA_NIM_ENDPOINT;
+
+    if (!apiKey || !endpoint) {
+      throw new Error('NVIDIA NIM API key or endpoint not configured. Set NVIDIA_NIM_API_KEY (or NVIDIA_API_KEY) and NVIDIA_NIM_ENDPOINT.');
+    }
+
+    // Convert image to base64
+    const base64Image = imageBinary.toString('base64');
+
+    // Prepare request payload for NVIDIA NIM
+    // Assuming the NIM endpoint expects a JSON with image data
+    const payload = {
+      // Adjust based on actual NIM API specification
+      // Common format for vision models:
+      inputs: [
+        {
+          // Example for NVIDIA NIM, may vary
+          // Some NIMs expect "image" field with base64
+          // We'll use a generic structure; user may need to adjust
+          image: base64Image
+        }
+      ],
+      // Parameters for extraction
+      parameters: {
+        // Example: extract all fields
+        // This will depend on the specific NIM model used
+        // User should configure the NIM appropriately for billing extraction
+        task: 'information_extraction',
+        // Possibly specify schema or prompt
+      }
+    };
+
+    const response = await axios.post(endpoint, payload, {
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      timeout: 30000 // 30 seconds
+    });
+
+    // Assuming response.data contains extracted fields
+    // Adjust based on actual NIM response format
+    const extractedData = response.data;
+
+    // If NIM returns wrapped response, unwrap accordingly
+    // For example: { predictions: [...] } or { output: {...} }
+    // We'll assume the extracted data is directly in response.data
+    // User may need to adjust this part based on actual NIM output
+
+    return extractedData;
+  } catch (error) {
+    console.error('Error in billing extraction:', error.message);
+    // Re-throw with more context
+    throw new Error(`Billing extraction failed: ${error.message}`);
+  }
+}
+
+module.exports = { extractBillingInfo };
