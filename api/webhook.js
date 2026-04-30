@@ -1,5 +1,5 @@
 const line = require("./utils/line");
-const gemini = require("./utils/gemini");
+const conversationalAi = require("./utils/conversationalAi");
 const billingExtractor = require("./utils/billingExtractor");
 const googleSheets = require("./utils/googleSheets");
 
@@ -33,7 +33,7 @@ module.exports = async (req, res) => {
 
             if (event.message.type === "text") {
               try {
-                const msg = await gemini.textOnly(event.message.text);
+                const msg = await conversationalAi.chat(event.message.text);
                 // Send reply to user via LINE API
                 await line.reply(replyToken, [{ type: "text", text: msg }]);
               } catch (error) {

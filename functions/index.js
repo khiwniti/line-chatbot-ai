@@ -1,6 +1,7 @@
 const { onRequest } = require("firebase-functions/v2/https");
 const line = require("./utils/line");
 const billingExtractor = require("./utils/billingExtractor");
+const conversationalAi = require("./utils/conversationalAi");
 const { db, storage } = require("./utils/firebaseAdmin");
 const crypto = require("crypto");
 
@@ -34,8 +35,17 @@ exports.webhook = onRequest(async (req, res) => {
 
       if (event.type === "message") {
         if (event.message.type === "text") {
-          // Fallback text reply
-          await line.reply(event.replyToken, [{ type: "text", text: "Please upload an invoice image to process. \nกรุณาอัปโหลดรูปภาพบิลเพื่อดำเนินการ" }]);
+          try {
+            const msg = await conversationalAi.chat(event.message.text);
+            await line.reply(event.replyToken, [{ type: "text", text: msg }]);
+          } catch (error) {
+            console.error('Error processing text message:', error);
+            try {
+              await line.reply(event.replyToken, [{ type: "text", text: `เกิดข้อผิดพลาดในการประมวลผลข้อความ: ${error.message}` }]);
+            } catch (replyError) {
+              console.error('Failed to send error reply:', replyError);
+            }
+          }
           return res.end();
         }
 
