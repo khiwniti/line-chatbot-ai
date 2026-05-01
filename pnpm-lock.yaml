@@ -12,7 +12,7 @@ importers:
         specifier: ^1.27.0
         version: 1.50.1
       axios:
-        specifier: ^1.13.1
+        specifier: ^1.15.2
         version: 1.15.2
       express:
         specifier: ^4.21.0
