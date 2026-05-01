@@ -8,7 +8,7 @@ const axios = require('axios');
  */
 async function chat(message) {
   try {
-    const apiKey = process.env.NVIDIA_NIM_API_KEY;
+    const apiKey = process.env.NVIDIA_NIM_API_KEY || process.env.NVIDIA_API_KEY;
     // We assume an OpenAI-compatible endpoint. We'll use a generic conversational endpoint if NVIDIA_NIM_CHAT_ENDPOINT is set,
     // otherwise fallback to a default or require it. For NIM, usually it's /v1/chat/completions
     const endpoint = process.env.NVIDIA_NIM_CHAT_ENDPOINT || "https://integrate.api.nvidia.com/v1/chat/completions";
