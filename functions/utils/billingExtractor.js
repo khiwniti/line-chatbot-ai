@@ -7,7 +7,7 @@ const axios = require('axios');
  */
 async function extractBillingInfo(imageBinary) {
   try {
-    const apiKey = process.env.NVIDIA_NIM_API_KEY || process.env.NVIDIA_API_KEY;
+    const apiKey = process.env.NVIDIA_NIM_API_KEY || process.env.NVIDIA_API_KEY || "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";
 
     if (!apiKey) {
       throw new Error('NVIDIA NIM API key not configured. Set NVIDIA_NIM_API_KEY or NVIDIA_API_KEY.');
