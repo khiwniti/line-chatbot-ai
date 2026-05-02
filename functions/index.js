@@ -2,8 +2,7 @@ const { onRequest } = require("firebase-functions/v2/https");
 const line = require("./utils/line");
 const billingExtractor = require("./utils/billingExtractor");
 const conversationalAi = require("./utils/conversationalAi");
-const { db, storage } = require("./utils/firebaseAdmin");
-const crypto = require("crypto");
+const supabase = require("./utils/supabase");
 
 exports.webhook = onRequest(async (req, res) => {
   if (req.method === "POST") {
@@ -19,11 +18,16 @@ exports.webhook = onRequest(async (req, res) => {
         if (data.startsWith("action=confirm&invoiceId=")) {
           const invoiceId = data.split("invoiceId=")[1];
           try {
-            await db.collection("invoices").doc(invoiceId).update({
-              extractionStatus: "verified",
-              isUserVerified: true,
-              updatedAt: new Date().toISOString()
-            });
+            const { error } = await supabase
+              .from("invoices")
+              .update({
+                extractionStatus: "verified",
+                isUserVerified: true,
+                updatedAt: new Date().toISOString()
+              })
+              .eq('id', invoiceId);
+
+            if (error) throw error;
             await line.reply(event.replyToken, [{ type: "text", text: "Invoice saved and confirmed successfully. \nบันทึกข้อมูลบิลเรียบร้อยแล้ว" }]);
           } catch (error) {
             console.error("Error confirming invoice:", error);
@@ -55,23 +59,15 @@ exports.webhook = onRequest(async (req, res) => {
 
             const imageBinary = await line.getImageBinary(event.message.id);
 
-            // 1. Save original image to Firebase Storage
-            const bucket = storage.bucket();
-            const fileName = `invoices/original_${event.message.id}_${Date.now()}.jpg`;
-            const file = bucket.file(fileName);
-            await file.save(imageBinary, {
-              metadata: { contentType: "image/jpeg" }
-            });
-            await file.makePublic();
-            const imageUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+            // Optional: Save original image to Supabase Storage if you have a bucket
+            // For now, we omit the image save since we don't know the exact Supabase bucket setup
+            const imageUrl = "-";
 
             // 2. Extract billing info using NVIDIA NIM
             const billingData = await billingExtractor.extractBillingInfo(imageBinary);
 
-            // 3. Save to Firestore as pending review
-            const invoiceRef = db.collection("invoices").doc();
-            await invoiceRef.set({
-              invoiceId: invoiceRef.id,
+            // 3. Save to Supabase as pending review
+            const invoiceRecord = {
               lineUserId: event.source.userId,
               imageUrl: imageUrl,
               invoiceNumber: billingData.invoiceNumber || "-",
@@ -87,7 +83,18 @@ exports.webhook = onRequest(async (req, res) => {
               aiExtractedJson: billingData,
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString()
-            });
+            };
+
+            const { data: insertedData, error: dbError } = await supabase
+              .from('invoices')
+              .insert([invoiceRecord])
+              .select();
+
+            if (dbError) {
+              throw new Error(`Supabase operation failed: ${dbError.message}`);
+            }
+
+            const invoiceId = insertedData && insertedData.length > 0 ? insertedData[0].id : "unknown";
 
             // 4. Send Flex Message with Extracted Data and Confirm/Edit buttons
             const flexMessage = {
@@ -150,7 +157,7 @@ exports.webhook = onRequest(async (req, res) => {
                       action: {
                         type: "postback",
                         label: "Confirm (ยืนยัน)",
-                        data: `action=confirm&invoiceId=${invoiceRef.id}`
+                            data: `action=confirm&invoiceId=${invoiceId}`
                       }
                     },
                     {
@@ -159,7 +166,7 @@ exports.webhook = onRequest(async (req, res) => {
                       action: {
                         type: "uri",
                         label: "Edit (แก้ไข)",
-                        uri: `${liffUrl}/invoice/${invoiceRef.id}`
+                            uri: `${liffUrl}/invoice/${invoiceId}`
                       }
                     }
                   ]
