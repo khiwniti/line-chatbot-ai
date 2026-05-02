@@ -24,4 +24,13 @@ const reply = (token, payload) => {
   });
 };
 
-module.exports = { getImageBinary, reply };
+const push = (to, payload) => {
+  return axios({
+    method: "post",
+    url: "https://api.line.me/v2/bot/message/push",
+    headers: LINE_HEADER,
+    data: { to: to, messages: payload }
+  });
+};
+
+module.exports = { getImageBinary, reply, push };
