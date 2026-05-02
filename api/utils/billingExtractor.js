@@ -30,7 +30,7 @@ async function extractBillingInfo(imageBinary) {
 If any field is missing or cannot be identified, leave its value as null (or 0 for numbers). Do not include any explanations. ONLY return JSON.`;
 
     const payload = {
-      model: "meta/llama-3.2-90b-vision-instruct",
+      model: "meta/llama-3.2-11b-vision-instruct",
       messages: [
         {
           role: "user",
