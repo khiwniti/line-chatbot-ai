@@ -13,13 +13,13 @@ async function chat(message) {
     // otherwise fallback to a default or require it. For NIM, usually it's /v1/chat/completions
     const endpoint = process.env.NVIDIA_NIM_CHAT_ENDPOINT || "https://integrate.api.nvidia.com/v1/chat/completions";
     // Default model if not specified
-    const model = process.env.NVIDIA_NIM_CHAT_MODEL || "meta/llama-3.1-70b-instruct";
+    let model = process.env.NVIDIA_NIM_CHAT_MODEL || "meta/llama-3.1-70b-instruct";
 
     if (!apiKey) {
       throw new Error('NVIDIA NIM API key not configured');
     }
 
-    const payload = {
+    let payload = {
       model: model,
       messages: [
         {
@@ -35,13 +35,31 @@ async function chat(message) {
       max_tokens: 1024
     };
 
-    const response = await axios.post(endpoint, payload, {
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      timeout: 15000
-    });
+    let response;
+    try {
+      response = await axios.post(endpoint, payload, {
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        timeout: 15000
+      });
+    } catch (error) {
+      if (error.response && (error.response.status === 404 || error.response.status === 410) && model !== "meta/llama-3.1-70b-instruct") {
+        console.warn(`Model ${model} failed with ${error.response.status}. Falling back to meta/llama-3.1-70b-instruct.`);
+        model = "meta/llama-3.1-70b-instruct";
+        payload.model = model;
+        response = await axios.post(endpoint, payload, {
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+          },
+          timeout: 15000
+        });
+      } else {
+        throw error;
+      }
+    }
 
     if (response.data && response.data.choices && response.data.choices.length > 0) {
       return response.data.choices[0].message.content;
