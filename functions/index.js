@@ -64,7 +64,9 @@ exports.webhook = onRequest(async (req, res) => {
             const imageUrl = "-";
 
             // 2. Extract billing info using NVIDIA NIM
-            const billingData = await billingExtractor.extractBillingInfo(imageBinary);
+            const extractionResult = await billingExtractor.extractBillingInfo(imageBinary);
+            const billingData = extractionResult.parsed;
+            const rawOcrText = extractionResult.rawText;
 
             // 3. Save to Supabase as pending review
             const invoiceRecord = {
@@ -80,7 +82,7 @@ exports.webhook = onRequest(async (req, res) => {
               vatAmount: billingData.vatAmount || 0,
               extractionStatus: "pending_review",
               isUserVerified: false,
-              aiExtractedJson: billingData,
+              aiExtractedJson: { ...billingData, _rawOcrText: rawOcrText },
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString()
             };
@@ -143,6 +145,25 @@ exports.webhook = onRequest(async (req, res) => {
                         { type: "text", text: "Total:", color: "#aaaaaa", size: "sm", flex: 1 },
                         { type: "text", text: `${billingData.totalAmount || 0} ${billingData.currency || "THB"}`, color: "#666666", size: "sm", flex: 3, wrap: true }
                       ]
+                        },
+                        {
+                          type: "separator",
+                          margin: "md"
+                        },
+                        {
+                          type: "text",
+                          text: "Raw OCR Text (For Verification):",
+                          color: "#aaaaaa",
+                          size: "xs",
+                          margin: "md"
+                        },
+                        {
+                          type: "text",
+                          text: rawOcrText.substring(0, 500) + (rawOcrText.length > 500 ? "..." : ""),
+                          color: "#888888",
+                          size: "xs",
+                          wrap: true,
+                          maxLines: 5
                     }
                   ]
                 },

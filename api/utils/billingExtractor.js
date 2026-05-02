@@ -88,7 +88,10 @@ ${extractedRawText}`;
     const jsonString = content.replace(/^```json\s*/i, '').replace(/```\s*$/i, '');
     const extractedData = JSON.parse(jsonString);
 
-    return extractedData;
+    return {
+      parsed: extractedData,
+      rawText: extractedRawText
+    };
   } catch (error) {
     console.error('Error in billing extraction:', error.response?.data || error.message);
     throw new Error(`Billing extraction failed: ${error.message}`);
